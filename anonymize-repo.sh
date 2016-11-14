@@ -46,13 +46,13 @@ pushd "$mydir/$NEW_NAME" >/dev/null
 git clean -xfd
 git reset --hard
 rm -rf $BAD_FILES
+rm -rf "$(basename "$SEARCH_FOR_FILE")" "$SEARCH_FOR_FILE"
 find . -name .git | xargs rm -rf
 git init
 git add .
 git grep --name-only -i "$REPLACE_FROM" | xargs sed s"${SED_SPECIAL_CHARACTER}${REPLACE_FROM}${SED_SPECIAL_CHARACTER}${REPLACEMENT}${SED_SPECIAL_CHARACTER}g" -i
 git diff
 rm -rf .git
-rm -rf "$(basename "$SEARCH_FOR_FILE")" "$SEARCH_FOR_FILE"
 cd ..
 tar -czvf "${NEW_NAME}.tar.gz" "$NEW_NAME"
 popd >/dev/null
