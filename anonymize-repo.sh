@@ -56,6 +56,9 @@ git add .
 if [ ! -z "$(git grep -i "$REPLACE_FROM")" ]; then
     echo 'Failed to make all replacements:'
     git grep -i "$REPLACE_FROM"
+    echo 'Failed to make the above replacements.'
+    echo 'Press ENTER to continue, or C-c to break.'
+    read
 fi
 rm -rf .git
 cd ..
