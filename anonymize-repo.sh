@@ -45,6 +45,9 @@ cp -a "$DIRECTORY" "$mydir/$NEW_NAME"
 pushd "$mydir/$NEW_NAME" >/dev/null
 git clean -xfd
 git reset --hard
+git submodule foreach git clean -xfd
+git submodule foreach git reset --hard
+git submodule foreach rm -rf $BAD_FILES
 rm -rf $BAD_FILES
 rm -rf "$(basename "$SEARCH_FOR_FILE")" "$SEARCH_FOR_FILE"
 find . -name .git | xargs rm -rf
@@ -62,7 +65,7 @@ if [ ! -z "$(git grep -i "$REPLACE_FROM")" ]; then
 fi
 rm -rf .git
 cd ..
-tar -czvf "${NEW_NAME}.tar.gz" "$NEW_NAME"
+tar --numeric-owner -czvf "${NEW_NAME}.tar.gz" "$NEW_NAME"
 popd >/dev/null
 
 cp "$mydir/${NEW_NAME}.tar.gz" ./
