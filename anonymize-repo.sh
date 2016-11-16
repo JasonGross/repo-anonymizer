@@ -2,6 +2,7 @@
 
 SEARCH_FOR_FILE="$1"
 DIRECTORY="$2"
+NEW_NAME="$3"
 DIR_EXTRA="-anonymized"
 REPLACEMENT="REDACTED"
 BAD_FILES=".gitmodules .gitattributes .gitignore .mailmap .travis.yml AUTHORS CONTRIBUTORS"
@@ -17,7 +18,9 @@ if [ -z "$1" ] || [ -z "$2" ]; then
 fi
 
 REPLACE_FROM="$(printf "%s" "$(< "$SEARCH_FOR_FILE")" | tr '\n' '|' | sed s'/|/\\|/g')"
-NEW_NAME="$(basename $(cd "$DIRECTORY" && pwd))${DIR_EXTRA}"
+if [ -z "$NEW_NAME" ]; then
+    NEW_NAME="$(basename $(cd "$DIRECTORY" && pwd))${DIR_EXTRA}"
+fi
 
 if [ ! -z "$(echo "${REPLACE_FROM}" | grep "${SED_SPECIAL_CHARACTER}")" ]; then
     echo "ERROR: Blacklist file $SEARCH_FOR_FILE cannot contain $SED_SPECIAL_CHARACTER"
