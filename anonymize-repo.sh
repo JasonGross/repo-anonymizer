@@ -1,15 +1,28 @@
 #!/bin/bash
 
+EXT="tar.gz"
+function maybe_parse_next_opt() {
+    if [ "$1" == "--zip" ]; then
+	EXT="zip"
+	shift
+    fi
+}
+
+maybe_parse_next_opt
 SEARCH_FOR_FILE="$1"
+maybe_parse_next_opt
 DIRECTORY="$2"
+maybe_parse_next_opt
 NEW_NAME="$3"
+maybe_parse_next_opt
 DIR_EXTRA="-anonymized"
 REPLACEMENT="REDACTED"
 BAD_FILES=".gitmodules .gitattributes .gitignore .mailmap .travis.yml AUTHORS CONTRIBUTORS"
 SED_SPECIAL_CHARACTER="~"
 
-if [ -z "$1" ] || [ -z "$2" ]; then
-    echo "USAGE: $0 BLACKLIST_FILE DIRECTORY_TO_PACKAGE"
+
+if [ -z "${SEARCH_FOR_FILE}" ] || [ -z "${DIRECTORY}" ]; then
+    echo "USAGE: $0 [--zip] BLACKLIST_FILE DIRECTORY_TO_PACKAGE"
     echo "BLACKLIST_FILE - newline separated list of sed-escaped search patterns"
     echo "DIRECTORY_TO_PACKAGE - path to the folder to create an anonymized version of"
     echo ""
@@ -68,9 +81,9 @@ if [ ! -z "$(git grep -i "$REPLACE_FROM")" ]; then
 fi
 rm -rf .git
 cd ..
-tar --numeric-owner -czvf "${NEW_NAME}.tar.gz" "$NEW_NAME"
+tar --numeric-owner -a -cvf "${NEW_NAME}.${EXT}" "$NEW_NAME"
 popd >/dev/null
 
-cp "$mydir/${NEW_NAME}.tar.gz" ./
+cp "$mydir/${NEW_NAME}.${EXT}" ./
 
 cleanup
