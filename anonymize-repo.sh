@@ -22,9 +22,10 @@ SED_SPECIAL_CHARACTER="~"
 
 
 if [ -z "${SEARCH_FOR_FILE}" ] || [ -z "${DIRECTORY}" ]; then
-    echo "USAGE: $0 [--zip] BLACKLIST_FILE DIRECTORY_TO_PACKAGE"
+    echo "USAGE: $0 [--zip] BLACKLIST_FILE DIRECTORY_TO_PACKAGE [NEW_DIRECTORY_NAME]"
     echo "BLACKLIST_FILE - newline separated list of sed-escaped search patterns"
     echo "DIRECTORY_TO_PACKAGE - path to the folder to create an anonymized version of"
+    echo "NEW_DIRECTORY_NAME - the name that replaces the last component of DIRECTORY_TO_PACKAGE in the archive"
     echo ""
     echo "Everything in the HEAD commit of the git tree gets packaged"
     exit 1
