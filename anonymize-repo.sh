@@ -1,20 +1,25 @@
 #!/bin/bash
 
 EXT="tar.gz"
-function maybe_parse_next_opt() {
+TOOL="tar --numeric-owner -a -cvf"
+SHIFT_COUNT=0
+function parse_opts() {
+    echo "$@"
     if [ "$1" == "--zip" ]; then
 	EXT="zip"
-	shift
+	TOOL="zip -r"
+	SHIFT_COUNT=1
+    else
+	SHIFT_COUNT=0
     fi
 }
-
-maybe_parse_next_opt
-SEARCH_FOR_FILE="$1"
-maybe_parse_next_opt
-DIRECTORY="$2"
-maybe_parse_next_opt
-NEW_NAME="$3"
-maybe_parse_next_opt
+parse_opts "$@"; shift ${SHIFT_COUNT}
+SEARCH_FOR_FILE="$1"; shift
+parse_opts "$@"; shift ${SHIFT_COUNT}
+DIRECTORY="$1"; shift
+parse_opts "$@"; shift ${SHIFT_COUNT}
+NEW_NAME="$1"; shift
+parse_opts "$@"; shift ${SHIFT_COUNT}
 DIR_EXTRA="-anonymized"
 REPLACEMENT="REDACTED"
 BAD_FILES=".gitmodules .gitattributes .gitignore .mailmap .travis.yml AUTHORS CONTRIBUTORS"
@@ -44,7 +49,7 @@ fi
 
 echo 'The following instances will be redacted:'
 (cd "$DIRECTORY" && git --no-pager grep -i "$REPLACE_FROM")
-echo 'The above instances will be redacted when creating ${NEW_NAME}.tar.gz.'
+echo "The above instances will be redacted when creating ${NEW_NAME}.${EXT}."
 echo 'Press ENTER to continue, or C-c to break.'
 read
 
@@ -62,12 +67,20 @@ cp -a "$DIRECTORY" "$mydir/$NEW_NAME"
 pushd "$mydir/$NEW_NAME" >/dev/null
 git clean -xfd
 git reset --hard
+touch .git/isknown
 git submodule foreach git clean -xfd
 git submodule foreach git reset --hard
 git submodule foreach rm -rf $BAD_FILES
+git submodule foreach touch .git/isknown
 rm -rf $BAD_FILES
 rm -rf "$(basename "$SEARCH_FOR_FILE")" "$SEARCH_FOR_FILE"
-find . -name .git | xargs rm -rf
+for loc in $(find . -name .git); do
+    if [ ! -e "$loc/isknown" ]; then
+       rm -rf "$loc/.."
+    else
+        rm -rf "$loc"
+    fi
+done
 git init
 git add .
 git grep --name-only -i "$REPLACE_FROM" | xargs sed s"${SED_SPECIAL_CHARACTER}${REPLACE_FROM}${SED_SPECIAL_CHARACTER}${REPLACEMENT}${SED_SPECIAL_CHARACTER}gI" -i
@@ -82,7 +95,7 @@ if [ ! -z "$(git grep -i "$REPLACE_FROM")" ]; then
 fi
 rm -rf .git
 cd ..
-tar --numeric-owner -a -cvf "${NEW_NAME}.${EXT}" "$NEW_NAME"
+${TOOL} "${NEW_NAME}.${EXT}" "$NEW_NAME"
 popd >/dev/null
 
 cp "$mydir/${NEW_NAME}.${EXT}" ./
