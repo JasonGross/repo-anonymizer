@@ -2,23 +2,31 @@
 
 EXT="tar.gz"
 TOOL="tar --numeric-owner -a -cvf"
+SUBDIR="."
 SHIFT_COUNT=0
-function parse_opts() {
+function parse_opt() {
     if [ "$1" == "--zip" ]; then
 	EXT="zip"
 	TOOL="zip -r"
 	SHIFT_COUNT=1
+    elif [ "$1" == "--only-subdir" ]; then
+        SUBDIR="$2"
+        SHIFT_COUNT=2
     else
 	SHIFT_COUNT=0
     fi
 }
-parse_opts "$@"; shift ${SHIFT_COUNT}
+parse_opt "$@"; shift ${SHIFT_COUNT}
+parse_opt "$@"; shift ${SHIFT_COUNT}
 SEARCH_FOR_FILE="$1"; shift
-parse_opts "$@"; shift ${SHIFT_COUNT}
+parse_opt "$@"; shift ${SHIFT_COUNT}
+parse_opt "$@"; shift ${SHIFT_COUNT}
 DIRECTORY="$1"; shift
-parse_opts "$@"; shift ${SHIFT_COUNT}
+parse_opt "$@"; shift ${SHIFT_COUNT}
+parse_opt "$@"; shift ${SHIFT_COUNT}
 NEW_NAME="$1"; shift
-parse_opts "$@"; shift ${SHIFT_COUNT}
+parse_opt "$@"; shift ${SHIFT_COUNT}
+parse_opt "$@"; shift ${SHIFT_COUNT}
 DIR_EXTRA="-anonymized"
 REPLACEMENT="REDACTED"
 BAD_FILES=".gitmodules .gitattributes .gitignore .mailmap .travis.yml AUTHORS CONTRIBUTORS"
@@ -26,7 +34,8 @@ SED_SPECIAL_CHARACTER="~"
 
 
 if [ -z "${SEARCH_FOR_FILE}" ] || [ -z "${DIRECTORY}" ]; then
-    echo "USAGE: $0 [--zip] BLACKLIST_FILE DIRECTORY_TO_PACKAGE [NEW_DIRECTORY_NAME]"
+    echo "USAGE: $0 [--zip] [--only-subdir SUBDIR] BLACKLIST_FILE DIRECTORY_TO_PACKAGE [NEW_DIRECTORY_NAME]"
+    echo "SUBDIR - Only perform anonymization in the given subdirectory (default: .)"
     echo "BLACKLIST_FILE - newline separated list of sed-escaped search patterns"
     echo "DIRECTORY_TO_PACKAGE - path to the folder to create an anonymized version of"
     echo "NEW_DIRECTORY_NAME - the name that replaces the last component of DIRECTORY_TO_PACKAGE in the archive"
@@ -47,7 +56,7 @@ fi
 
 
 echo 'The following instances will be redacted:'
-(cd "$DIRECTORY" && git --no-pager grep -i "$REPLACE_FROM")
+(cd "$DIRECTORY" && git --no-pager grep -i "$REPLACE_FROM" -- "$SUBDIR")
 echo "The above instances will be redacted when creating ${NEW_NAME}.${EXT}."
 echo 'Press ENTER to continue, or C-c to break.'
 read
@@ -64,32 +73,27 @@ trap cleanup INT TERM EXIT
 cp -a "$DIRECTORY" "$mydir/$NEW_NAME"
 
 pushd "$mydir/$NEW_NAME" >/dev/null
-git clean -xfd
+git clean -xffd
 git reset --hard
-touch .git/isknown
+touch .git-isknown
 git submodule update --init --recursive
-git submodule foreach --recursive git clean -xfd
+git submodule foreach --recursive git clean -xffd
 git submodule foreach --recursive git reset --hard
-git submodule foreach --recursive rm -rf $BAD_FILES
-git submodule foreach --recursive touch .git/isknown
-rm -rf $BAD_FILES
-rm -rf "$(basename "$SEARCH_FOR_FILE")" "$SEARCH_FOR_FILE"
-for loc in $(find . -name .git); do
-    if [ ! -e "$loc/isknown" ]; then
-        rm -rf "$loc/.."
-    else
-        rm -rf "$loc"
-    fi
-done
+if [ "$SUBDIR" == "." ]; then
+    git submodule foreach --recursive rm -rf $BAD_FILES
+fi
+(cd "$SUBDIR" && rm -rf $BAD_FILES)
+(cd "$SUBDIR" && rm -rf "$(basename "$SEARCH_FOR_FILE")" "$SEARCH_FOR_FILE")
+find . -name .git -exec rm -rf "{}" \;
 git init
 git add .
 
-git grep --name-only -i "$REPLACE_FROM" | xargs sed s"${SED_SPECIAL_CHARACTER}${REPLACE_FROM}${SED_SPECIAL_CHARACTER}${REPLACEMENT}${SED_SPECIAL_CHARACTER}gI" -i
+(cd "$SUBDIR" && (git grep --name-only -i "$REPLACE_FROM" | xargs sed s"${SED_SPECIAL_CHARACTER}${REPLACE_FROM}${SED_SPECIAL_CHARACTER}${REPLACEMENT}${SED_SPECIAL_CHARACTER}gI" -i))
 git --no-pager diff
 git add .
-if [ ! -z "$(git grep -i "$REPLACE_FROM")" ]; then
+if [ ! -z "$(git grep -i "$REPLACE_FROM" -- "$SUBDIR")" ]; then
     echo 'Failed to make all replacements:'
-    git grep -i "$REPLACE_FROM"
+    git grep -i "$REPLACE_FROM" -- "$SUBDIR"
     echo 'Failed to make the above replacements.'
     echo 'Press ENTER to continue, or C-c to break.'
     read
