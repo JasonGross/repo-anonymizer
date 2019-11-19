@@ -50,7 +50,7 @@ fi
 mydir="$(mktemp -d "${TMPDIR:-/tmp/}$(basename "$0").XXXXXXXXXXXX")"
 function cleanup {
     if [ -z "$NO_CLEANUP" ]; then
-	rm -rf "$mydir"
+	rm -rf "$mydir" &
     fi
 }
 trap cleanup INT TERM EXIT
