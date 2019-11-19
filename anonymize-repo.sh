@@ -46,6 +46,12 @@ if [ ! -z "$(echo "${REPLACE_FROM}" | grep "${SED_SPECIAL_CHARACTER}")" ]; then
 fi
 
 
+echo 'The following instances will be redacted:'
+(cd "$DIRECTORY" && git --no-pager grep -i "$REPLACE_FROM")
+echo "The above instances will be redacted when creating ${NEW_NAME}.${EXT}."
+echo 'Press ENTER to continue, or C-c to break.'
+read
+
 # http://stackoverflow.com/a/10983009/377022
 mydir="$(mktemp -d "${TMPDIR:-/tmp/}$(basename "$0").XXXXXXXXXXXX")"
 function cleanup {
@@ -77,12 +83,6 @@ for loc in $(find . -name .git); do
 done
 git init
 git add .
-
-echo 'The following instances will be redacted:'
-git --no-pager grep -i "$REPLACE_FROM"
-echo "The above instances will be redacted when creating ${NEW_NAME}.${EXT}."
-echo 'Press ENTER to continue, or C-c to break.'
-read
 
 git grep --name-only -i "$REPLACE_FROM" | xargs sed s"${SED_SPECIAL_CHARACTER}${REPLACE_FROM}${SED_SPECIAL_CHARACTER}${REPLACEMENT}${SED_SPECIAL_CHARACTER}gI" -i
 git --no-pager diff
