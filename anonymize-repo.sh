@@ -4,7 +4,6 @@ EXT="tar.gz"
 TOOL="tar --numeric-owner -a -cvf"
 SHIFT_COUNT=0
 function parse_opts() {
-    echo "$@"
     if [ "$1" == "--zip" ]; then
 	EXT="zip"
 	TOOL="zip -r"
