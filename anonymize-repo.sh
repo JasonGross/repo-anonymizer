@@ -61,6 +61,7 @@ pushd "$mydir/$NEW_NAME" >/dev/null
 git clean -xfd
 git reset --hard
 touch .git/isknown
+git submodule update --init --recursive
 git submodule foreach --recursive git clean -xfd
 git submodule foreach --recursive git reset --hard
 git submodule foreach --recursive rm -rf $BAD_FILES
