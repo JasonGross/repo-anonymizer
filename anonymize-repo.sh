@@ -75,7 +75,6 @@ cp -a "$DIRECTORY" "$mydir/$NEW_NAME"
 pushd "$mydir/$NEW_NAME" >/dev/null
 git clean -xffd
 git reset --hard
-touch .git-isknown
 git submodule update --init --recursive
 git submodule foreach --recursive git clean -xffd
 git submodule foreach --recursive git reset --hard
