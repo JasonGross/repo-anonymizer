@@ -2,7 +2,11 @@
 
 EXT="tar.gz"
 TOOL="tar --numeric-owner -a -cvf"
+UNTOOL="tar -xvf"
 SUBDIR="."
+TEST=yes
+JARG=""
+if [ ! -z "$J" ]; then JARG="-j$J"; fi
 SHIFT_COUNT=0
 function parse_opt() {
     if [ "$1" == "--zip" ]; then
@@ -12,19 +16,26 @@ function parse_opt() {
     elif [ "$1" == "--only-subdir" ]; then
         SUBDIR="$2"
         SHIFT_COUNT=2
+    elif [ "$1" == "--no-test" ]; then
+        TEST=""
+        SHIFT_COUNT=1
     else
 	SHIFT_COUNT=0
     fi
 }
 parse_opt "$@"; shift ${SHIFT_COUNT}
 parse_opt "$@"; shift ${SHIFT_COUNT}
+parse_opt "$@"; shift ${SHIFT_COUNT}
 SEARCH_FOR_FILE="$1"; shift
+parse_opt "$@"; shift ${SHIFT_COUNT}
 parse_opt "$@"; shift ${SHIFT_COUNT}
 parse_opt "$@"; shift ${SHIFT_COUNT}
 DIRECTORY="$1"; shift
 parse_opt "$@"; shift ${SHIFT_COUNT}
 parse_opt "$@"; shift ${SHIFT_COUNT}
+parse_opt "$@"; shift ${SHIFT_COUNT}
 NEW_NAME="$1"; shift
+parse_opt "$@"; shift ${SHIFT_COUNT}
 parse_opt "$@"; shift ${SHIFT_COUNT}
 parse_opt "$@"; shift ${SHIFT_COUNT}
 DIR_EXTRA="-anonymized"
@@ -99,9 +110,18 @@ if [ ! -z "$(git grep -i "$REPLACE_FROM" -- "$SUBDIR")" ]; then
 fi
 rm -rf .git
 cd ..
-${TOOL} "${NEW_NAME}.${EXT}" "$NEW_NAME"
+${TOOL} "${NEW_NAME}.${EXT}" "${NEW_NAME}"
+mkdir "$mydir/__fresh"
+cd "$mydir/__fresh"
+${UNTOOL} "$mydir/${NEW_NAME}.${EXT}"
 popd >/dev/null
 
 cp "$mydir/${NEW_NAME}.${EXT}" ./
+
+if [ ! -z "$TEST" ]; then
+    pushd "$mydir/__fresh/${NEW_NAME}" >/dev/null
+    make ${JARG}
+    popd >/dev/null
+fi
 
 cleanup
