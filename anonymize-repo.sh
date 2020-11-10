@@ -45,11 +45,13 @@ SED_SPECIAL_CHARACTER="~"
 
 
 if [ -z "${SEARCH_FOR_FILE}" ] || [ -z "${DIRECTORY}" ]; then
-    echo "USAGE: $0 [--zip] [--only-subdir SUBDIR] BLACKLIST_FILE DIRECTORY_TO_PACKAGE [NEW_DIRECTORY_NAME]"
+    echo "USAGE: $0 [--zip] [--only-subdir SUBDIR] [--no-test] BLACKLIST_FILE DIRECTORY_TO_PACKAGE [NEW_DIRECTORY_NAME]"
     echo "SUBDIR - Only perform anonymization in the given subdirectory (default: .)"
     echo "BLACKLIST_FILE - newline separated list of sed-escaped search patterns"
     echo "DIRECTORY_TO_PACKAGE - path to the folder to create an anonymized version of"
     echo "NEW_DIRECTORY_NAME - the name that replaces the last component of DIRECTORY_TO_PACKAGE in the archive"
+    echo "--zip - create a .zip file rather than a .tar.gz"
+    echo "--no-test - don't run 'make' in the anonomized folder (done by default as a sanity check)"
     echo ""
     echo "Everything in the HEAD commit of the git tree gets packaged"
     exit 1
@@ -99,6 +101,19 @@ git init
 git add .
 
 (cd "$SUBDIR" && (git grep --name-only -i "$REPLACE_FROM" | xargs sed s"${SED_SPECIAL_CHARACTER}${REPLACE_FROM}${SED_SPECIAL_CHARACTER}${REPLACEMENT}${SED_SPECIAL_CHARACTER}gI" -i))
+# also handle directory and file names
+(cd "$SUBDIR" && (
+     do_again=yes;
+     while [ "${do_again}" == "yes" ]; do
+         do_again="no"
+         while read -r dir; do
+             newdir="$(echo "$dir" | sed s"${SED_SPECIAL_CHARACTER}${REPLACE_FROM}${SED_SPECIAL_CHARACTER}${REPLACEMENT}${SED_SPECIAL_CHARACTER}gI")"
+             if [ "$newdir" != "$dir" ]; then
+                 git mv "$dir" "$newdir" || { do_again="yes"; echo "trying again..."; }
+             fi
+         done < <(find . | sed s',^\./,,g' | grep -v '^\.$' | grep -v '^\.git$' | grep -v '^\.git/')
+     done
+ ))
 git --no-pager diff
 git add .
 if [ ! -z "$(git grep -i "$REPLACE_FROM" -- "$SUBDIR")" ]; then
