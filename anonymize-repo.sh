@@ -29,7 +29,7 @@ parse_opt "$@"; shift ${SHIFT_COUNT}
 parse_opt "$@"; shift ${SHIFT_COUNT}
 DIR_EXTRA="-anonymized"
 REPLACEMENT="REDACTED"
-BAD_FILES=".gitmodules .gitattributes .gitignore .mailmap .travis.yml AUTHORS CONTRIBUTORS"
+BAD_FILES=".gitmodules .gitattributes .gitignore .mailmap .travis.yml .github AUTHORS CONTRIBUTORS"
 SED_SPECIAL_CHARACTER="~"
 
 
